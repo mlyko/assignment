@@ -37,13 +37,28 @@ async def handle_ping(ping: PingModel) -> Response:
     """
     logger.info('Handle ping request: %s', ping.url)
     async with httpx.AsyncClient(verify=False, follow_redirects=1) as client:
-        response: httpx.Response = await client.get(ping.url, timeout=10.0)
+        try:
+            response: httpx.Response = await client.get(ping.url, timeout=10.0)
+        except httpx.ConnectError as err:
+            logger.error('Ping request connection error: %s, error=%s', ping.url, err)
+            return JSONResponse({
+                'status': 502,
+                'error': str(err)
+            }, status_code=502)
+        except httpx.ReadTimeout:
+            logger.error('Ping request timeout: %s', ping.url)
+            return JSONResponse({
+                'status': 504,
+                'error': 'Timeout'
+            }, status_code=504)
 
     if response.status_code == 200:
         # Return payload when the GET request was succeed
         content_type = response.headers.get('Content-Type')
         return Response(response.content, status_code=200, media_type=content_type)
 
+    logger.warning('Ping request failed: %d %s',
+                   response.status_code, response.reason_phrase)
     status_code = 400 if 400 <= response.status_code < 500 else 500
     return JSONResponse({
         'status': status_code,
