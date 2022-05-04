@@ -26,7 +26,7 @@ class PingModel(BaseModel):
     url: str
 
 
-app = FastAPI()
+app = FastAPI(ping_timeout=10.0)
 logger = logging.getLogger('assignment')
 
 
@@ -38,7 +38,7 @@ async def handle_ping(ping: PingModel) -> Response:
     logger.info('Handle ping request: %s', ping.url)
     async with httpx.AsyncClient(verify=False, follow_redirects=1) as client:
         try:
-            response: httpx.Response = await client.get(ping.url, timeout=10.0)
+            response: httpx.Response = await client.get(ping.url, timeout=app.extra['ping_timeout'])
         except httpx.ConnectError as err:
             logger.error('Ping request connection error: %s, error=%s', ping.url, err)
             return JSONResponse({
@@ -101,9 +101,13 @@ if __name__ == '__main__':
     parser.add_argument('-P', '--port',
                         help='TCP/IP port to serve on (default: %(default)r)',
                         type=int, default='8080')
+    parser.add_argument('-T', '--ping-timeout',
+                        help='timeout for ping requests (default: %(default)r)',
+                        type=float, default=10.0)
     args = parser.parse_args()
 
     log_level = logging.DEBUG if args.debug else logging.INFO
     log_config = configure_logging(log_level)
+    app.extra['ping_timeout'] = args.ping_timeout
     uvicorn.run(app, host=args.host, port=args.port,
                 log_level=log_level, log_config=log_config)
