@@ -36,7 +36,8 @@ async def handle_ping(ping: PingModel) -> Response:
     Handles ping POST requests accepting a link in a JSON body.
     """
     logger.info('Handle ping request: %s', ping.url)
-    async with httpx.AsyncClient(verify=False, follow_redirects=1) as client:
+    test_config = app.extra.get('test_config', {})
+    async with httpx.AsyncClient(verify=False, follow_redirects=1, **test_config) as client:
         try:
             response: httpx.Response = await client.get(ping.url, timeout=app.extra['ping_timeout'])
         except httpx.ConnectError as err:
@@ -55,7 +56,8 @@ async def handle_ping(ping: PingModel) -> Response:
     if response.status_code == 200:
         # Return payload when the GET request was succeed
         content_type = response.headers.get('Content-Type')
-        return Response(response.content, status_code=200, media_type=content_type)
+        return Response(response.content, status_code=200,
+                        headers={'Content-Type': content_type})
 
     logger.warning('Ping request failed: %d %s',
                    response.status_code, response.reason_phrase)
