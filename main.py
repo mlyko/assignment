@@ -10,10 +10,13 @@
 __author__ = 'Marcin Łyko'
 __email__ = 'marcin.g.lyko@gmail.com'
 
+import copy
+import logging
 import argparse
 
 import httpx
 import uvicorn
+from uvicorn.config import LOGGING_CONFIG
 from fastapi import FastAPI
 from fastapi.responses import Response, JSONResponse
 from pydantic import BaseModel
@@ -24,6 +27,7 @@ class PingModel(BaseModel):
 
 
 app = FastAPI()
+logger = logging.getLogger('assignment')
 
 
 @app.post('/ping')
@@ -31,6 +35,7 @@ async def handle_ping(ping: PingModel) -> Response:
     """
     Handles ping POST requests accepting a link in a JSON body.
     """
+    logger.info('Handle ping request: %s', ping.url)
     async with httpx.AsyncClient(verify=False, follow_redirects=1) as client:
         response: httpx.Response = await client.get(ping.url, timeout=10.0)
 
@@ -51,11 +56,30 @@ async def handle_info() -> dict:
     """
     Handles info GET requests returning a hardcoded JSON body.
     """
+    logger.info('Handle info request')
     return {'Receiver': 'Cisco is the best!'}
+
+
+def configure_logging(log_level: int):
+    log_format = '%(asctime)s - %(levelname)s : %(message)s'
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter(log_format))
+    logger.addHandler(handler)
+    logger.setLevel(log_level)
+
+    log_config = copy.deepcopy(LOGGING_CONFIG)
+    log_config['formatters']['default']['fmt'] = log_format
+    access_format = '%(asctime)s - %(levelname)s %(client_addr)s : "%(request_line)s" %(status_code)s'
+    log_config['formatters']['access']['fmt'] = access_format
+
+    return log_config
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-d', '--debug', action='store_true',
+                        help='turn on the debug mode')
     parser.add_argument('-H', '--host',
                         help='TCP/IP hostname to serve on (default: %(default)r)',
                         default='localhost')
@@ -64,4 +88,7 @@ if __name__ == '__main__':
                         type=int, default='8080')
     args = parser.parse_args()
 
-    uvicorn.run(app, host=args.host, port=args.port, log_level='info')
+    log_level = logging.DEBUG if args.debug else logging.INFO
+    log_config = configure_logging(log_level)
+    uvicorn.run(app, host=args.host, port=args.port,
+                log_level=log_level, log_config=log_config)
