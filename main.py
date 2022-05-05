@@ -26,7 +26,12 @@ class PingModel(BaseModel):
     url: str
 
 
-app = FastAPI(ping_timeout=10.0)
+app = FastAPI(
+    name='Assignment',
+    description=__doc__,
+    version='0.1.0',
+    ping_timeout=10.0
+)
 logger = logging.getLogger('assignment')
 
 
