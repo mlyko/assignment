@@ -33,7 +33,7 @@ logger = logging.getLogger('assignment')
 @app.post('/ping')
 async def handle_ping(ping: PingModel) -> Response:
     """
-    Handles ping POST requests accepting a link in a JSON body.
+    Handles ping POST requests, which accept a link in a JSON body.
     """
     logger.info('Handle ping request: %s', ping.url)
     test_config = app.extra.get('test_config', {})
