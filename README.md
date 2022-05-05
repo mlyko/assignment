@@ -12,6 +12,15 @@ $ source avenv/bin/activate
 $ pip3 install -r requirements.txt
 ```
 
+DOCKER
+======
+
+```
+$ docker pull python
+$ docker build -t assignment .
+$ docker run -it --rm --publish 8080:80 --name main assignment
+```
+
 RUNNING
 =======
 ```
