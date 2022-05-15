@@ -79,7 +79,7 @@ async def handle_info() -> dict:
     Handles info GET requests returning a hardcoded JSON body.
     """
     logger.info('Handle info request')
-    return {'Receiver': 'Cisco is the best!'}
+    return {'receiver': 'assignment'}
 
 
 def configure_logging(log_level: int):

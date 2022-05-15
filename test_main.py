@@ -37,7 +37,7 @@ async def test_info(client: AsyncClient):
 
     assert response.status_code == 200
     assert response.headers.get('Content-Type') == 'application/json'
-    assert response.json() == {'Receiver': 'Cisco is the best!'}
+    assert response.json() == {'receiver': 'assignment'}
 
 
 async def test_ping(client: AsyncClient):
